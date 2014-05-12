@@ -35,94 +35,125 @@ angular.module('hypervideo.directives', [])
                     //get all the video DOM elements and stor them into an array
                     var videoDOMMap = {};
                     var videoDOMMapPromise = $timeout(function () {
-                        videoDOMMap[activityMaterial.video.url] = $element.contents()[0].children[0];
+                        videoDOMMap[activityMaterial.video.url] = $element.contents()[0].children[0].children[0];
                         var j = 1;
                         for (var i = 0; i < problemMaterial.length; i++) {
                             if (typeof problemMaterial[i].correct_video != "undefined")
-                                videoDOMMap[problemMaterial[i].correct_video.url] = $element.contents()[0].children[j++];
+                                videoDOMMap[problemMaterial[i].correct_video.url] = $element.contents()[0].children[j++].children[0];
                             if (typeof problemMaterial[i].wrong_video != "undefined")
-                                videoDOMMap[problemMaterial[i].wrong_video.url] = $element.contents()[0].children[j++];
+                                videoDOMMap[problemMaterial[i].wrong_video.url] = $element.contents()[0].children[j++].children[0];
                         }
                     }, 0);
 
                     videoDOMMapPromise.then(function () {
-                        var video = videoDOMMap[activityMaterial.video.url];
-                        var popcorn = Popcorn('#video_0');
-                        $scope.showVideo[activityMaterial.video.url] = true;
-                        video.play();
-                        //add listener for dynamically setting up the width and height of the containers
-                        video.addEventListener('loadedmetadata', function () {
-                            var videoWidth = this.videoWidth;
-                            var videoHeight = this.videoHeight;
-                            $(".videoContainer").css("height", function () {
-                                return videoHeight;
-                            });
-                            $(".videoContainer").css("width", function () {
-                                return videoWidth;
-                            });
-                            $(".problemContainer").css("width", function () {
-                                return videoWidth - 40;
-                            });
-                        });
-                        var currentProblem;
+					    var currentProblem;
                         var pausedTime = '0', enterTime = 0, submitTime = 0, duration = 0;
                         $scope.showChoice = [];
                         $scope.isSelected = [];
                         $scope.choiceMsg = [];
-                        angular.forEach(problemMaterial, function (problem) {
-                            popcorn.cue(problem.show_time, function () {
-                                video.pause();
-                                video.removeAttribute('controls');
-                                pausedTime = video.currentTime;
-                                currentProblem = problem;
-                                $scope.$apply(function () {
-                                    $scope.choices = problem.choices;
-                                    $scope.showProblem = true;
-                                    enterTime = Date.now();
-                                    console.log("Student starts tackling the problem at time: " + enterTime);
-                                    // dynamically set the "left" css attribute
-                                    $timeout(function () {
-                                        for (var i = 0; i < problem.choices.length; i++)
-                                            $("#choiceContainer_" + i).css("left", function () {
-                                                var marginLeft = ($(".videoContainer").width() -
-                                                    problem.choices.length * 160) / 2;
-                                                return marginLeft + 160 * i;
-                                            });
-                                    }, 0);
-                                    if (problem.type == "singlechoice") {
-                                        for (var i = 0; i < problem.choices.length; i++)
-                                            $scope.choiceMsg[i] = String.fromCharCode(65 + i)
-                                    } else {
-                                        $scope.choiceMsg[0] = "正确";
-                                        $scope.choiceMsg[1] = "错误";
-                                    }
-                                })
-                            })
-                        });
+						var popcorn = Popcorn('#video_0');
+                        $scope.showVideo[activityMaterial.video.url] = true;
+                        var video = videojs(videoDOMMap[activityMaterial.video.url].id,{"controls": true, "autoplay": false, "preload": "auto","aspectRatio": "auto"},function(){
+							this.on('loadedmetadata',function(){
+							//add listener for dynamically setting up the width and height of the containers
+									var  videoObject= this.M;
+									var videoWidth = videoObject.videoWidth;
+									var videoHeight = videoObject.videoHeight;
+									$(".videoContainer").css("height", function () {
+										return videoHeight;
+									});
+									$(".videoContainer").css("width", function () {
+										return videoWidth;
+									});
+									this.height(videoHeight);
+									this.width(videoWidth);
+									$(".problemContainer").css("width", function () {
+										return videoWidth - 40;
+									});							
+								
+							});
+						
+							//event handler
+							angular.forEach(problemMaterial, function (problem) {
+								popcorn.cue(problem.show_time, function () {
+									video.pause();
+									video.controls(false);
+									pausedTime = video.currentTime;
+									currentProblem = problem;
+									$scope.$apply(function () {
+										$scope.choices = problem.choices;
+										$scope.showProblem = true;
+										enterTime = Date.now();
+										console.log("Student starts tackling the problem at time: " + enterTime);
+										// dynamically set the "left" css attribute
+										$timeout(function () {
+											for (var i = 0; i < problem.choices.length; i++)
+												$("#choiceContainer_" + i).css("left", function () {
+													var marginLeft = ($(".videoContainer").width() -
+														problem.choices.length * 160) / 2;
+													return marginLeft + 160 * i;
+												});
+										}, 0);
+										if (problem.type == "singlechoice") {
+											for (var i = 0; i < problem.choices.length; i++)
+												$scope.choiceMsg[i] = String.fromCharCode(65 + i)
+										} else {
+											$scope.choiceMsg[0] = "正确";
+											$scope.choiceMsg[1] = "错误";
+										}
+									})
+								})
+							});
+						});
+
+                        video.play();
+                        
+
+
+
 
                         var hyperVideo = function (videoObj, index) {
                             $scope.showVideo[activityMaterial.video.url] = false;
                             $scope.showVideo[videoObj.url] = true;
                             $scope.hasSelected = true;
-                            var subVideo = videoDOMMap[videoObj.url];
-                            subVideo.setAttribute('controls', 'controls');
+                            var subVideo = videojs(videoDOMMap[videoObj.url].id,{"controls": true, "autoplay": false, "preload": "auto"},function(){
+								this.on('ended',function(){
+									$scope.$apply(function () {
+										$scope.showProblem = false;
+										$scope.showVideo[videoObj.url] = false;
+										$scope.showVideo[activityMaterial.video.url] = true;
+										$scope.hasSelected = false;
+										$scope.isSelected[index] = null;
+									})
+									if (typeof videoObj.jump != "undefined")
+										pausedTime = videoObj.jump;
+									video.src = video.currentSrc;
+									video.controls(true);
+									video.play();									
+								})
+							
+							});
+							subVideo.on('play',function(){
+							//add listener for dynamically setting up the width and height of the containers
+								var  videoObject= this.M;
+								var videoWidth = videoObject.videoWidth;
+								var videoHeight = videoObject.videoHeight;
+								$(".videoContainer").css("height", function () {
+									return videoHeight;
+								});
+								$(".videoContainer").css("width", function () {
+									return videoWidth;
+								});
+								this.height(videoHeight);
+								this.width(videoWidth);
+								$(".problemContainer").css("width", function () {
+									return videoWidth - 40;
+								});		
+								
+							});
+                            subVideo.controls(true);
                             subVideo.play();
-                            subVideo.addEventListener("ended", function () {
-                                subVideo.pause();
-                                $scope.$apply(function () {
-                                    $scope.showProblem = false;
-                                    $scope.showVideo[videoObj.url] = false;
-                                    $scope.showVideo[activityMaterial.video.url] = true;
-                                    $scope.hasSelected = false;
-                                    $scope.isSelected[index] = null;
-                                })
-                                if (typeof videoObj.jump != "undefined")
-                                    pausedTime = videoObj.jump;
-                                video.src = video.currentSrc;
-                                video.setAttribute('controls', 'controls');
-                                video.load();
-                                video.play();
-                            })
+
                         };
                         $scope.chooseOption = function (index) {
                             /**
@@ -142,8 +173,7 @@ angular.module('hypervideo.directives', [])
                                     $scope.isSelected[index] = null;
                                     currentProblem++;
                                     video.src = video.currentSrc;
-                                    video.setAttribute('controls', 'controls');
-                                    video.load();
+                                    video.controls(true);
                                     video.play();
                                 }
                             } else {
@@ -154,17 +184,12 @@ angular.module('hypervideo.directives', [])
                                     $scope.isSelected[index] = null;
                                     currentProblem++;
                                     video.src = video.currentSrc;
-                                    video.setAttribute('controls', 'controls');
-                                    video.load();
+                                    video.controls(true);
                                     video.play();
                                 }
                             }
                         };
 
-                        //add listener for resume mainstream video
-                        video.addEventListener('canplay', function () {
-                            video.currentTime = pausedTime;
-                        });
                     })
                 })
             }

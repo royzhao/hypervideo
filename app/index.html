@@ -13,6 +13,16 @@
     <script src="lib/jquery-1.10.2.min.js"></script>
     <script src="lib/popcorn.min.js"></script>
     <script src="lib/underscore-min.js"></script>
+	
+	<!-- Chang URLs to wherever Video.js files will be hosted -->
+	<link href="lib/videojs/video-js.css" rel="stylesheet" type="text/css">
+	<!-- video.js must be in the <head> for older IEs to work. -->
+	<script src="lib/videojs/video.js"></script>
+
+	<!-- Unless using the CDN hosted version, update the URL to the Flash SWF -->
+	<script>
+	videojs.options.flash.swf = "lib/videojs/video-js.swf";
+	</script>
 
     <script src="js/app.js"></script>
     <script src="js/controllers.js"></script>

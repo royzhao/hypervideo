@@ -1,6 +1,10 @@
 <div class='videoContainer'>
-    <video ng-repeat="video in videos" id="video_{{ $index }}" class='video' src='{{ video }}'
-           ng-show="showVideo[video]" controls></video>
+	<div ng-repeat="video in videos" id="div_video_{{ $index }}" class="video" ng-show="showVideo[video]">
+    <video id="video_{{ $index }}" class='video-js vjs-default-skin video' src='{{ video }}'
+            controls></video>	
+	
+	</div>
+
 
     <div class='problemContainer' ng-show='showProblem'>
         <div ng-repeat='choice in choices'>
